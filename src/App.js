@@ -13,10 +13,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Router>
-          <PrivateRoute exact path="/" component={DashboardPage}/>
-          <Route exact path={["/signin", "/signup"]} component={AccessPage}/>
-        </Router>
+        <PrivateRoute exact path="/" component={DashboardPage}/>
+        <Route exact path={["/signin", "/signup"]} component={AccessPage}/>
       </AuthProvider>
     </Router>
   );

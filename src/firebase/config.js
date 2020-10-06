@@ -1,6 +1,7 @@
 import * as firebase from "firebase/app"
 import "firebase/auth"
-import 'firebase/analytics'; 
+import "firebase/analytics"; 
+import "firebase/firestore";
 
 const FIREBASE_CONFIG = {
   apiKey: process.env.REACT_APP_FB_KEY,
@@ -14,5 +15,5 @@ const FIREBASE_CONFIG = {
 };
 firebase.initializeApp(FIREBASE_CONFIG);
 firebase.analytics();
-
-export default firebase;
+const db = firebase.firestore();
+export {firebase, db};

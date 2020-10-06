@@ -33,6 +33,8 @@ const Wrapper = styled.section`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-width: 575px;
+  margin: 0 auto;
 `;
 
 const HomePage = () => {

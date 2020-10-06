@@ -1,10 +1,16 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { AuthContext } from '../firebase/auth'
-import firebase from '../firebase/config'
+import { firebase } from '../firebase/config'
 
 function DashboardPage() {
   const { user } = useContext(AuthContext);
 
+  useEffect(_ => {
+    let mounted = true;
+    if (mounted) {
+    }
+    return _ => mounted = false;
+  });
   const onClickSignOut = async () => {
     try {
       await firebase.auth().signOut();
@@ -12,7 +18,7 @@ function DashboardPage() {
   }
   return (
     <h1>
-      Hola {user.displayName}, este sera tu dashboard.
+      Hola {user.name}, este sera tu dashboard.
       <button onClick={onClickSignOut}>Sign out</button>
     </h1>
   );
