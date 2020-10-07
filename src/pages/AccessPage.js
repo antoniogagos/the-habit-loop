@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import * as Api from '../firebase/api';
 import styled from 'styled-components';
 import GoogleLogoRef from '../images/google-logo.svg'
 import AppleLogoRef from '../images/apple-logo.svg'
+import Ripple from '../components/loading';
 
 const AppleLogo = AppleLogoRef;
 const GoogleLogo = GoogleLogoRef;
@@ -15,6 +16,7 @@ const Form = styled.form`
 
 const AuthErrorText = styled.div`
   margin: 20px 0;
+  margin-top: 8px;
   text-align: center;
   color: #B71C1C;
   line-height: 20px;
@@ -40,7 +42,7 @@ const SeparatorLine = styled.div`
 const Button = styled.button`
   border: none;
   width: 100%;
-  background-color: #3F51B5;
+  background-color: #283593;
   padding: 16px;
   color: #fffffff7;
   border-radius: 6px;
@@ -82,7 +84,9 @@ const Title = styled.h1`
 `;
 
 const Wrapper = styled.section`
+  position: relative;
   max-width: 425px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.14);
   height: 100%;
   margin: 0 auto;
   background: #fff;
@@ -92,11 +96,8 @@ const Wrapper = styled.section`
   box-sizing: border-box;
 `;
 
-
-
 const Section = styled.section`
   > input {
-    color: "palevioletred";
     padding: 16px;
     background: #f7f7f7;
     border: none;
@@ -148,42 +149,53 @@ const StyledLink = styled(Link)`
   text-decoration: none;
 `;
 
-function SignIn() {
+const RippleWrapper = styled.div`
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fdefd56b;
+  z-index: 1;
+`;
+
+function SignIn({ updateLoading, isLoading }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [disabled, setDisabled] = useState(false);
   const [authError, setAuthError] = useState(null);
 
-  const handleSignIn = useCallback(async (evt) => {
+  const handleSignIn = async (evt) => {
     evt.preventDefault();
     const provider = evt.target.id;
     try {
-      setDisabled(true);
+      updateLoading(true);
       await Api.signInProvider({provider, email});
+      updateLoading(false);
     } catch (err) {
       setAuthError(err.message);
-      setDisabled(false);
+      updateLoading(false);
     }
-  });
+  };
 
-  const handleCustomSignIn = useCallback(async (evt) => {
+  const handleCustomSignIn = async (evt) => {
     evt.preventDefault();
     try {
-      setDisabled(true);
+      updateLoading(true);
       await Api.signInCustom({email, password});
+      updateLoading(false);
     } catch(err) {
       setAuthError(err.message);
-      setDisabled(false);
+      updateLoading(false);
     } 
-  });
+  };
 
   return (
     <>
     <Form onSubmit={handleCustomSignIn}>
-      <Title>Welcome Back!</Title>
-      <LogButton type="button" id="google" onClick={handleSignIn}><img alt="Google Logo" src={GoogleLogo}/>Sign in with Google</LogButton>
-      <LogButton type="button" id="apple" onClick={handleSignIn}><img alt="Apple Logo" src={AppleLogo}/>Sign in with Apple</LogButton>
-      <SeparatorLine><span>or</span></SeparatorLine>
+      <Title>Welcome Back!</Title>      
       <Section>
         <label htmlFor="email">Email</label>
         <input
@@ -199,64 +211,64 @@ function SignIn() {
             type="password" id="password" name="password"></input>
       </Section>
       {authError && <AuthErrorText>{authError}</AuthErrorText>}
-      <Button type="submit" disabled={disabled}>Sign in</Button>
+      <Button disabled={isLoading}>Sign in</Button>
+      <SeparatorLine><span>or</span></SeparatorLine>
+      <LogButton type="button" id="google" onClick={handleSignIn}><img alt="Google Logo" src={GoogleLogo}/>Sign in with Google</LogButton>
+      <LogButton type="button" id="apple" onClick={handleSignIn}><img alt="Apple Logo" src={AppleLogo}/>Sign in with Apple</LogButton>
     </Form>
     <BottomFormText>Don't have an account?<StyledLink to="/signup">Create one</StyledLink></BottomFormText>
+
     </>
   )
 }
 
-function SignUp() {
-  const [username, setUsername] = useState('');
+function SignUp({ updateLoading, isLoading }) {
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
-  const [disabled, setDisabled] = useState(false);
   const [authError, setAuthError] = useState(null);
+  
   const handleSignUp = async (evt) => {
     evt.preventDefault();
-    setDisabled(true);
+    updateLoading(true);
     const provider = evt.target.id;
     try {
       await Api.signInProvider({provider});
     } catch (err) {
       setAuthError(err.message);
-      setDisabled(false);
+      updateLoading(false);
     }
   };
 
   const handleCustomSignUp = async (evt) => {
     evt.preventDefault();
-    setDisabled(true);
+    updateLoading(true);
     try {
-      await Api.createUser({username, email, password});
+      await Api.createUser({name, email, password});
     } catch(err) {
       setAuthError(err.message);
-      setDisabled(false);
+      updateLoading(false);
     } 
   }
 
   return (
     <>
-    <Form>
+    <Form onSubmit={handleCustomSignUp}>
       <Title>Welcome!</Title>
-      <LogButton type="button" id="google" onClick={handleSignUp}><img src={GoogleLogo} alt="Google logo"/>Sign up with Google</LogButton>
-      <LogButton type="button" id="apple" onClick={handleSignUp}><img alt="Apple Logo" src={AppleLogo}/>Sign up with Apple</LogButton>
-      <SeparatorLine><span>or</span></SeparatorLine>
+      <Section>
+        <label htmlFor="name">Name</label>
+        <input
+          placeholder=" " id="name"  tabIndex="0" autoCorrect="off" required
+          value={name} onChange={(evt) => setName(evt.target.value)}
+          name="name" autoComplete="name" type="text"></input>
+        <span></span>
+      </Section>
       <Section>
         <label htmlFor="email">Email</label>
         <input
           placeholder=" " id="email" tabIndex="0" autoCorrect="off" required
           value={email} onChange={(evt) => setEmail(evt.target.value)}
           name="email" autoComplete="username" autoCapitalize="off" type="email"></input>
-        <span></span>
-      </Section>
-      {disabled && <div>Loading</div>}      
-      <Section>
-        <label htmlFor="name">Name</label>
-        <input
-          placeholder=" " id="name"  tabIndex="0" autoCorrect="off" required
-          value={username} onChange={(evt) => setUsername(evt.target.value)}
-          name="name" autoComplete="name" type="text"></input>
         <span></span>
       </Section>
       <Section>
@@ -268,7 +280,10 @@ function SignUp() {
         <span></span>
       </Section>
       {Boolean(authError) && <AuthErrorText>{authError}</AuthErrorText>}
-      <Button disabled={disabled} onClick={handleCustomSignUp}>Sign Up</Button>
+      <Button disabled={isLoading}>Sign Up</Button>
+      <SeparatorLine><span>or</span></SeparatorLine>
+      <LogButton type="button" id="google" onClick={handleSignUp}><img src={GoogleLogo} alt="Google logo"/>Sign up with Google</LogButton>
+      <LogButton type="button" id="apple" onClick={handleSignUp}><img alt="Apple Logo" src={AppleLogo}/>Sign up with Apple</LogButton>      
     </Form>
     <BottomFormText>Already have an account?<StyledLink to="/signin">Sign in</StyledLink></BottomFormText>
     </>
@@ -276,8 +291,17 @@ function SignUp() {
 }
 
 function AccessPage({ location }) {
+  const [loading, setLoading] = useState(false);
+  const updateLoading = status => {
+    setLoading(status);
+  }
   return (
-    <Wrapper>{location.pathname === '/signin' ? <SignIn/> : <SignUp/>}</Wrapper>
+    <Wrapper>
+      {loading && <RippleWrapper><Ripple color="#E65100"/></RippleWrapper>}
+      {location.pathname === '/signin'
+      ? <SignIn updateLoading={updateLoading} isLoading={loading}/>
+      : <SignUp updateLoading={updateLoading} isLoading={loading}/>}
+    </Wrapper>
   )
 }
 

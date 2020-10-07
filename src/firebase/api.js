@@ -1,4 +1,5 @@
 import { firebase, db } from './config.js'
+import { mobileCheck } from '../helpers/helpers.js';
 
 export const getUser = async ({uid}) => {
   try {
@@ -10,22 +11,21 @@ export const getUser = async ({uid}) => {
   }
 }
 
-export const createUser = async ({username, email, password}) => {
+export const addDbUser = async ({ uid, name, email }) => {
   try {
-    const {additionalUserInfo, user} = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    await db.collection('users').add({
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      uid, name, email});
+  } catch(err) {
+    throw new Error(err.message);
+  }
+}
+
+export const createUser = async ({name, email, password}) => {
+  try {
+    const { additionalUserInfo, user } = await firebase.auth().createUserWithEmailAndPassword(email, password);
     if (additionalUserInfo.isNewUser) {
-      await db.collection('users').add({
-        uid: user.uid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        name: username,
-        email,
-        verified: false,
-      });
-      const actionCodeSettings = {
-        url: 'https://the-habit-loop.firebaseapp.com/',
-        handleCodeInApp: true,
-      };
-      firebase.auth().currentUser.sendEmailVerification(actionCodeSettings);
+      await addDbUser({ uid: user.uid, name, email });
     }
   } catch(err) {
     throw new Error(err.message);
@@ -34,19 +34,29 @@ export const createUser = async ({username, email, password}) => {
 
 export const signInCustom = async ({email, password}) => {
   try {
+    const methods = await firebase.auth().fetchSignInMethodsForEmail(email);
+    if (methods.length && !methods.includes('password')) {
+      throw new Error('There is no user record corresponding to this identifier');
+    }
     await firebase.auth().signInWithEmailAndPassword(email, password);
   } catch(err) {
     throw new Error(err.message);
   }
 }
 
-export const signInProvider = async ({provider, email}) => {
+export const signInProvider = async ({provider}) => {
   try {
     let providerAuth;
     if (provider === 'google') {
       providerAuth = new firebase.auth.GoogleAuthProvider();
     }
-    await firebase.auth().signInWithPopup(providerAuth);
+    const method = mobileCheck() ? 'signInWithRedirect' : 'signInWithPopup';
+    var { user, additionalUserInfo } = await firebase.auth()[method](providerAuth);
+    if (additionalUserInfo.isNewUser) {
+      const { name, email } = additionalUserInfo.profile;
+      const { uid } = user;
+      await addDbUser({ uid, name, email });
+    }
   } catch(err) {
     throw new Error(err.message);
   }
